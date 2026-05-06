@@ -1,3 +1,5 @@
+[![smithery badge](https://smithery.ai/badge/OjasKord/document-integrity-validator-mcp)](https://smithery.ai/servers/OjasKord/document-integrity-validator-mcp)
+
 # Document Integrity Validator MCP
 
 Before your agent accepts, processes, or acts on any document received from an external party -- verify it is internally consistent and matches the known standard for its type. One call. Any document. Machine-readable verdict.
