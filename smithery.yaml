@@ -1,0 +1,12 @@
+startCommand:
+  type: http
+  url: https://document-integrity-validator-mcp-production.up.railway.app
+  configSchema:
+    type: object
+    properties:
+      apiKey:
+        type: string
+        description: "API key from kordagencies.com. Leave blank for free tier."
+        x-from:
+          header: "x-api-key"
+    required: []

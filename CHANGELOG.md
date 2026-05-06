@@ -1,0 +1,16 @@
+# Changelog
+
+## [1.0.0] - 2026-05-06
+
+### Initial release
+
+- `check_document` tool: assesses any document against its known international standard. Free tier: 10 calls/month per IP.
+- `check_document_package` tool: assesses 2-20 related documents individually and cross-checks for numeric, party, reference, date, commodity, and port conflicts. Paid tier only.
+- Vision support: accepts base64 image or extracted text or both.
+- UNKNOWN_DOCUMENT_TYPE verdict for unrecognised documents -- refusal is correct behaviour.
+- Structured verdict with agent_action, assessed_against, known_issuing_standard, and specific flags.
+- Trial extension endpoint: 10 extra free calls per email address via POST /trial-extension.
+- Stripe webhook for automated API key provisioning.
+- getEffectiveLimit() helper for accurate quota display after trial extension.
+- Free tier warning at 8 calls used (2 remaining).
+- checkAccess() runs only inside tools/call branch -- never on tools/list or initialize.

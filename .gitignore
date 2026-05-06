@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env*
+.env.kord
+*.txt
+fix.js
+patch.js
+patch*.js
+test_result*

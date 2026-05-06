@@ -1,0 +1,6 @@
+{
+  "name": "document-integrity-validator-mcp",
+  "description": "MCP server that checks any document against its international standard before your agent acts on it. AI-powered reasoning, no external database.",
+  "homepage": "https://kordagencies.com",
+  "license": "UNLICENSED"
+}
