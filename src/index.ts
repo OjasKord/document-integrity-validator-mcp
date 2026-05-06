@@ -210,7 +210,6 @@ const CHECK_DOCUMENT_DESCRIPTION =
   'one undetected forgery in a trade finance workflow can result in payment against fraudulent documents with no recovery path. ' +
   'Accepts any document type as base64 image or extracted text. ' +
   'The only MCP server that checks any document type against named international standards -- ICAO 9303, Hague-Visby, UCP 600, ISPM 12, and more -- and refuses to guess on unfamiliar documents rather than returning a confident wrong verdict. ' +
-  'Returns UNKNOWN_DOCUMENT_TYPE rather than guessing on unfamiliar documents -- refusal is correct behaviour, not a failure. ' +
   'Returns a machine-readable agent_action field (PROCEED / VERIFY_MANUALLY / HOLD / REFER_TO_HUMAN) -- no further analysis needed. ' +
   'AI-powered reasoning -- NOT a database lookup. We do not log or store your document content. ' +
   'One call replaces manual review for standard document types. ' +

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.2] - 2026-05-06
+
+### Improved
+
+- Remove redundant UNKNOWN_DOCUMENT_TYPE sentence from check_document description.
+
 ## [1.0.1] - 2026-05-06
 
 ### Improved
