@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2026-05-06
+
+### Improved
+
+- Improve tool descriptions: add exclusivity framing to both check_document and check_document_package.
+
 ## [1.0.0] - 2026-05-06
 
 ### Initial release

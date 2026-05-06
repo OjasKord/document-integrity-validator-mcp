@@ -1,20 +1,31 @@
 {
   "name": "document-integrity-validator-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server that checks any document against its international standard before your agent acts on it.",
   "type": "module",
   "main": "dist/index.js",
   "license": "UNLICENSED",
   "homepage": "https://kordagencies.com",
   "mcpName": "io.github.OjasKord/document-integrity-validator-mcp",
-  "keywords": ["mcp", "agent", "document", "validator", "integrity", "compliance", "kyc", "trade"],
+  "keywords": [
+    "mcp",
+    "agent",
+    "document",
+    "validator",
+    "integrity",
+    "compliance",
+    "kyc",
+    "trade"
+  ],
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "clean": "rm -rf dist"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@modelcontextprotocol/sdk": "^1.6.1",

@@ -209,8 +209,7 @@ const CHECK_DOCUMENT_DESCRIPTION =
   'An agent that acts on a document without verification risks acting on a forged, altered, or non-compliant document -- ' +
   'one undetected forgery in a trade finance workflow can result in payment against fraudulent documents with no recovery path. ' +
   'Accepts any document type as base64 image or extracted text. ' +
-  'Identifies the document type independently, then assesses it against the known international standard for that type -- ' +
-  'ICAO 9303 for passports, Hague-Visby Rules for bills of lading, UCP 600 for trade documents, ISPM 12 for phytosanitary certificates, and more. ' +
+  'The only MCP server that checks any document type against named international standards -- ICAO 9303, Hague-Visby, UCP 600, ISPM 12, and more -- and refuses to guess on unfamiliar documents rather than returning a confident wrong verdict. ' +
   'Returns UNKNOWN_DOCUMENT_TYPE rather than guessing on unfamiliar documents -- refusal is correct behaviour, not a failure. ' +
   'Returns a machine-readable agent_action field (PROCEED / VERIFY_MANUALLY / HOLD / REFER_TO_HUMAN) -- no further analysis needed. ' +
   'AI-powered reasoning -- NOT a database lookup. We do not log or store your document content. ' +
@@ -227,6 +226,7 @@ const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
   'dates (shipment date, expiry, presentation period), commodity descriptions, and port references. ' +
   'One call replaces manual cross-checking across the full document package. ' +
   'AI-powered reasoning -- NOT a database lookup. We do not log or store your document content. ' +
+  'The only MCP server that cross-checks a full document package against named international standards in a single call -- returns structured conflict flags, not prose. ' +
   'Paid tier only -- no free access. Pro: 500 calls/month at $29/month. Enterprise: 5,000 calls/month at $199/month. kordagencies.com.';
 
 const INITIALIZE_DESCRIPTION =
