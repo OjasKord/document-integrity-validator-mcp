@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-05-06
+
+### Improved
+
+- Add real Stripe payment URLs for Pro and Enterprise tiers.
+
 ## [1.0.2] - 2026-05-06
 
 ### Improved

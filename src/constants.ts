@@ -3,7 +3,8 @@ export const PERSIST_FILE = '/tmp/docintegrity_stats.json';
 export const FREE_TIER_LIMIT = 10;
 export const FREE_TIER_WARNING = 8;
 export const TRIAL_EXTENSION_CALLS = 10;
-export const PRO_UPGRADE_URL = 'https://kordagencies.com';
+export const PRO_UPGRADE_URL = 'https://buy.stripe.com/9B68wOdQx06Na04fbWebu0z';
+export const ENTERPRISE_UPGRADE_URL = 'https://buy.stripe.com/00w9ASeUBdXDa048Nyebu0A';
 export const LEGAL_DISCLAIMER =
   'AI-powered document consistency assessment. Results are for informational purposes only and do not constitute legal, compliance, or authentication advice. We do not log or store your document content. Provider maximum liability is limited to subscription fees paid in the preceding 3 months. Full terms: kordagencies.com/terms.html';
 export const STATS_KEY = process.env.STATS_KEY ?? 'ojas2026';
