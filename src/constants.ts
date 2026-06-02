@@ -1,4 +1,4 @@
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.4';
 export const PERSIST_FILE = '/tmp/docintegrity_stats.json';
 export const FREE_TIER_LIMIT = 10;
 export const FREE_TIER_WARNING = 8;
