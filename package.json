@@ -1,6 +1,6 @@
 {
   "name": "document-integrity-validator-mcp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "MCP server that checks any document against its international standard before your agent acts on it.",
   "type": "module",
   "main": "dist/index.js",
