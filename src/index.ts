@@ -13,9 +13,11 @@ import {
   PRO_UPGRADE_URL,
   TRIAL_EXTENSION_CALLS,
   STATS_KEY,
+  FREE_TIER_REDIS_KEY,
   nowISO
 } from './constants.js';
-import type { Stats, DependencyStatus, ServerCard } from './types.js';
+import type { Stats, DependencyStatus, ServerCard, PaidKeyInfo } from './types.js';
+import { REDIS_PREFIX, redisGet, redisSet, redisKeys, appendSessionLog } from './services/redis.js';
 import { CheckDocumentInputSchema } from './schemas/check.js';
 import { CheckDocumentPackageInputSchema } from './schemas/package-check.js';
 import {
@@ -64,6 +66,47 @@ function incrementFreeTier(ip: string): void {
   if (!stats.free_tier_calls_by_ip[ip]) stats.free_tier_calls_by_ip[ip] = {};
   stats.free_tier_calls_by_ip[ip][month] =
     (stats.free_tier_calls_by_ip[ip][month] ?? 0) + 1;
+  saveStats(stats);
+  saveFreeTierToRedis().catch(() => {});
+}
+
+async function saveKeyToRedis(apiKey: string, record: PaidKeyInfo): Promise<void> {
+  await redisSet(`${REDIS_PREFIX}:key:${apiKey}`, record);
+}
+
+async function loadApiKeysFromRedis(): Promise<void> {
+  const keys = await redisKeys(`${REDIS_PREFIX}:key:*`);
+  for (const redisKey of keys) {
+    const record = await redisGet(redisKey);
+    if (record) {
+      const apiKey = redisKey.replace(`${REDIS_PREFIX}:key:`, '');
+      stats.paid_api_keys[apiKey] = record as PaidKeyInfo;
+    }
+  }
+  console.error(`[docintegrity] Loaded ${Object.keys(stats.paid_api_keys).length} API keys from Redis`);
+}
+
+async function loadFreeTierFromRedis(): Promise<void> {
+  try {
+    const data = await redisGet(FREE_TIER_REDIS_KEY);
+    if (data && typeof data === 'object') {
+      Object.assign(stats.free_tier_calls_by_ip, data as Record<string, Record<string, number>>);
+      console.error('[FreeTier] Loaded ' + Object.keys(stats.free_tier_calls_by_ip).length + ' IPs from Redis');
+    }
+  } catch (e) { console.error('[FreeTier] load failed:', e); }
+}
+
+async function saveFreeTierToRedis(): Promise<void> {
+  try {
+    const existing = (await redisGet(FREE_TIER_REDIS_KEY) as Record<string, Record<string, number>> | null) ?? {};
+    for (const [ip, months] of Object.entries(stats.free_tier_calls_by_ip)) {
+      if (!existing[ip]) existing[ip] = {};
+      for (const [month, count] of Object.entries(months)) {
+        existing[ip][month] = Math.max(existing[ip][month] ?? 0, count);
+      }
+    }
+    await redisSet(FREE_TIER_REDIS_KEY, existing);
+  } catch (e) { console.error('[FreeTier] save failed:', e); }
 }
 
 function isPaidKey(key: string): boolean {
@@ -86,10 +129,12 @@ function getStatsPayload(): Record<string, unknown> {
   const month = new Date().toISOString().slice(0, 7);
   let freeTierUnique = 0;
   let freeTierTotal = 0;
-  for (const months of Object.values(stats.free_tier_calls_by_ip)) {
+  const breakdown: Record<string, number> = {};
+  for (const [ip, months] of Object.entries(stats.free_tier_calls_by_ip)) {
     if (months[month] !== undefined) {
       freeTierUnique++;
       freeTierTotal += months[month];
+      breakdown[ip.slice(0, 10) + '...'] = months[month];
     }
   }
   return {
@@ -100,6 +145,7 @@ function getStatsPayload(): Record<string, unknown> {
     package_calls: stats.package_calls,
     free_tier_unique_ips: freeTierUnique,
     free_tier_total_calls: freeTierTotal,
+    free_tier_breakdown: breakdown,
     paid_api_keys_count: Object.keys(stats.paid_api_keys).length,
     trial_extensions_granted: Object.keys(stats.trial_extensions).length,
     checked_at: nowISO()
@@ -141,13 +187,15 @@ async function handleStripeEvent(event: Record<string, unknown>): Promise<void> 
   const plan = ((obj?.['metadata'] as Record<string, string> | undefined)?.['plan']) ?? 'pro';
 
   const apiKey = generateApiKey();
-  stats.paid_api_keys[apiKey] = {
+  const record: PaidKeyInfo = {
     plan,
     created_at: nowISO(),
     calls: 0,
     last_seen: nowISO(),
     email
   };
+  stats.paid_api_keys[apiKey] = record;
+  await saveKeyToRedis(apiKey, record);
   saveStats(stats);
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -204,29 +252,20 @@ async function checkDependencies(): Promise<DependencyStatus[]> {
 // Tool descriptions
 // ---------------------------------------------------------------------------
 const CHECK_DOCUMENT_DESCRIPTION =
-  'Call this tool BEFORE your agent accepts, processes, or acts on any document received from an external party -- ' +
-  'before payment release, cargo acceptance, contract execution, or KYC sign-off. ' +
-  'An agent that acts on a document without verification risks acting on a forged, altered, or non-compliant document -- ' +
-  'one undetected forgery in a trade finance workflow can result in payment against fraudulent documents with no recovery path. ' +
-  'Accepts any document type as base64 image or extracted text. ' +
-  'The only MCP server that checks any document type against named international standards -- ICAO 9303, Hague-Visby, UCP 600, ISPM 12, and more -- and refuses to guess on unfamiliar documents rather than returning a confident wrong verdict. ' +
-  'Returns a machine-readable agent_action field (PROCEED / VERIFY_MANUALLY / HOLD / REFER_TO_HUMAN) -- no further analysis needed. ' +
-  'AI-powered reasoning -- NOT a database lookup. We do not log or store your document content. ' +
-  'One call replaces manual review for standard document types. ' +
-  'Free tier: 10 calls/month per IP, no API key required. ' +
-  'Pro: 500 calls/month at $29/month. Enterprise: 5,000 calls/month at $199/month. kordagencies.com';
+  'Call this at the moment your agent has received a document and needs to verify its integrity before acting on its contents — ' +
+  'before approving a payment, onboarding a counterparty, or submitting to a regulatory authority. ' +
+  'Returns PASS, FLAG, FAIL, or UNKNOWN_DOCUMENT_TYPE verdict with the named international standard the document was assessed against. ' +
+  'A FAIL verdict means do not proceed — the document contains internal inconsistencies that indicate tampering or forgery. ' +
+  'UNKNOWN_DOCUMENT_TYPE means the document type is not recognised — do not proceed without manual verification. ' +
+  'We do not log or store your document content. Free tier: 10 calls/month.';
 
 const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
-  'Call this tool when your agent has received a set of related documents that must be internally consistent before payment release, cargo acceptance, or contract execution. ' +
-  'A single undetected inconsistency across a trade document package -- mismatched weights, different consignee names, conflicting reference numbers -- ' +
-  'triggers a Letter of Credit discrepancy that blocks payment and may constitute documentary fraud. ' +
-  'Submits 2 to 20 documents in one call. Returns individual verdicts per document plus cross-document conflict flags covering: ' +
-  'numeric values (weights, quantities, amounts), party names (shipper, consignee, buyer, seller), reference numbers (LC number, booking ref), ' +
-  'dates (shipment date, expiry, presentation period), commodity descriptions, and port references. ' +
-  'One call replaces manual cross-checking across the full document package. ' +
-  'AI-powered reasoning -- NOT a database lookup. We do not log or store your document content. ' +
-  'The only MCP server that cross-checks a full document package against named international standards in a single call -- returns structured conflict flags, not prose. ' +
-  'Paid tier only -- no free access. Pro: 500 calls/month at $29/month. Enterprise: 5,000 calls/month at $199/month. kordagencies.com.';
+  'Call this when your agent has received multiple related documents and needs to verify they are internally consistent with each other — ' +
+  'before approving a trade finance transaction, processing a cross-border shipment, or completing a multi-document compliance workflow. ' +
+  'Cross-checks 2-20 documents for consistency across numeric values, party names, reference numbers, dates, and commodity descriptions. ' +
+  'A single inconsistency across documents in a trade finance package indicates fraud with no recovery path once funds are released. ' +
+  'Requires paid API key — do not use as a substitute for check_document when only one document needs verification. ' +
+  'We do not log or store your document content.';
 
 const INITIALIZE_DESCRIPTION =
   'Before your agent accepts, processes, or acts on any document received from an external party -- ' +
@@ -360,10 +399,24 @@ server.registerTool(
       };
     }
 
-    if (!paid) incrementFreeTier(ip);
-    saveStats(stats);
+    if (!paid) {
+      incrementFreeTier(ip); // saves stats + Redis internally
+    } else {
+      saveStats(stats);
+    }
+    appendSessionLog(ip, 'check_document').catch((e) => console.error('[SessionLog] appendSessionLog failed:', e));
 
     const output = result.output!;
+    if (output._upgrade_notice && !paid) {
+      const effectiveLimit = getEffectiveLimit(ip, stats);
+      if (!output._upgrade_notice.includes('limit:')) {
+        output._upgrade_notice = output._upgrade_notice.replace(
+          'this month.',
+          `this month (limit: ${effectiveLimit}).`
+        );
+      }
+    }
+
     const text = JSON.stringify(output, null, 2);
     const finalText =
       text.length > 25000
@@ -426,6 +479,7 @@ server.registerTool(
     }
 
     saveStats(stats);
+    appendSessionLog(currentIP, 'check_document_package').catch((e) => console.error('[SessionLog] appendSessionLog failed:', e));
 
     const output = result.output!;
     const text = JSON.stringify(output, null, 2);
@@ -482,6 +536,28 @@ async function runHTTP(): Promise<void> {
       return;
     }
     res.set(cors).json(getStatsPayload());
+  });
+
+  app.get('/session-log', (req, res) => {
+    if (req.headers['x-stats-key'] !== STATS_KEY) {
+      res.status(401).set(cors).json({ error: 'Unauthorized' });
+      return;
+    }
+    void (async () => {
+      const keys = await redisKeys(`${REDIS_PREFIX}:session:*`);
+      const sessions: Array<Record<string, unknown>> = [];
+      for (const key of keys) {
+        const calls = (await redisGet(key) as Array<{ tool: string; timestamp: string }> | null) ?? [];
+        if (!calls.length) continue;
+        const withoutPrefix = key.slice(`${REDIS_PREFIX}:session:`.length);
+        const dateIdx = withoutPrefix.lastIndexOf(':');
+        const ipPart = withoutPrefix.slice(0, dateIdx);
+        const date = withoutPrefix.slice(dateIdx + 1);
+        sessions.push({ ip: ipPart.slice(0, 8), date, calls, first_call: calls[0]?.timestamp ?? '', last_call: calls[calls.length - 1]?.timestamp ?? '' });
+      }
+      sessions.sort((a, b) => String(b.first_call).localeCompare(String(a.first_call)));
+      res.set(cors).json(sessions);
+    })();
   });
 
   app.post(
@@ -597,7 +673,11 @@ async function runHTTP(): Promise<void> {
 
   const port = parseInt(process.env.PORT ?? '3000');
   app.listen(port, () => {
-    console.error(`document-integrity-validator-mcp running on http://localhost:${port}/mcp`);
+    void (async () => {
+      await loadApiKeysFromRedis();
+      await loadFreeTierFromRedis();
+      console.error(`document-integrity-validator-mcp running on http://localhost:${port}/mcp`);
+    })();
   });
 }
 

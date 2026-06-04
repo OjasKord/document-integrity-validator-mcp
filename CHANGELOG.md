@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.5] - 2026-06-04
+
+### Added
+- `src/services/redis.ts` — Upstash Redis helpers (redisGet, redisSet, redisExpire, redisKeys, appendSessionLog) with prefix `docintegrity`
+- Free tier Redis persistence: `loadFreeTierFromRedis` / `saveFreeTierToRedis` with Math.max merge
+- API key Redis persistence: `saveKeyToRedis` / `loadApiKeysFromRedis` — first durable persistence for paid keys
+- `appendSessionLog` with 24h TTL; `/session-log` endpoint (requires x-stats-key)
+- `free_tier_breakdown` per-IP object on `/stats` response for current month
+- `getEffectiveLimit` (from check.ts) now used in `_upgrade_notice` warning string
+
+### Changed
+- `check_document` and `check_document_package` descriptions rewritten for orchestral agent runtime selection
+- `VERSION` bumped to `1.0.5`
+
 ## [1.0.4] - 2026-06-02
 
 ### Fixed
