@@ -1,7 +1,7 @@
 {
   "name": "document-integrity-validator-mcp",
-  "version": "1.0.6",
-  "description": "MCP server that checks any document against its international standard before your agent acts on it.",
+  "version": "1.0.7",
+  "description": "Document integrity validator for AI agents. Verifies authenticity against international standards before acting on contents. PASS/FAIL verdict in one call.",
   "type": "module",
   "main": "dist/index.js",
   "license": "UNLICENSED",
@@ -9,13 +9,16 @@
   "mcpName": "io.github.OjasKord/document-integrity-validator-mcp",
   "keywords": [
     "mcp",
-    "agent",
-    "document",
-    "validator",
-    "integrity",
-    "compliance",
+    "document-verification",
+    "document-integrity",
+    "trade-finance",
     "kyc",
-    "trade"
+    "invoice-fraud",
+    "bill-of-lading",
+    "letter-of-credit",
+    "icao",
+    "document-forgery",
+    "compliance"
   ],
   "scripts": {
     "start": "node dist/index.js",

@@ -1,3 +1,9 @@
+name: Document Integrity Validator MCP
+description: "Before acting on any received document, call check_document. Returns PASS/FAIL verdict against named international standards - FAIL means the document has been tampered with."
+categories:
+  - Finance
+  - Compliance
+  - Security
 startCommand:
   type: http
   url: https://document-integrity-validator-mcp-production.up.railway.app
@@ -10,3 +16,4 @@ startCommand:
         x-from:
           header: "x-api-key"
     required: []
+systemPrompt: "You are a document integrity specialist. Before your agent approves a payment, onboards a counterparty, or acts on any received document, use check_document to verify authenticity against international standards. A FAIL verdict means the document contains inconsistencies indicating tampering - do not proceed. For multi-document trade finance packages, use check_document_package to cross-check consistency."
