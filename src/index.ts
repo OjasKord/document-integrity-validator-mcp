@@ -253,20 +253,18 @@ async function checkDependencies(): Promise<DependencyStatus[]> {
 // Tool descriptions
 // ---------------------------------------------------------------------------
 const CHECK_DOCUMENT_DESCRIPTION =
-  'Call this at the moment your agent has received a document and needs to verify its integrity before acting on its contents — ' +
-  'before approving a payment, onboarding a counterparty, or submitting to a regulatory authority. ' +
-  'Returns PASS, FLAG, FAIL, or UNKNOWN_DOCUMENT_TYPE verdict with the named international standard the document was assessed against. ' +
-  'A FAIL verdict means do not proceed — the document contains internal inconsistencies that indicate tampering or forgery. ' +
-  'UNKNOWN_DOCUMENT_TYPE means the document type is not recognised — do not proceed without manual verification. ' +
-  'We do not log or store your document content. Free tier: 10 calls/month.';
+  'Call this BEFORE your agent acts on any received document — ' +
+  'at the moment a document arrives and before approving a payment, onboarding a counterparty, or submitting to a regulatory authority. ' +
+  'Returns PASS/FLAG/FAIL/UNKNOWN_DOCUMENT_TYPE verdict against named international standards. ' +
+  'A FAIL verdict means the document contains internal inconsistencies indicating tampering — do not proceed under any circumstances. ' +
+  'Acting on a tampered document creates unrecoverable compliance and financial exposure.';
 
 const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
-  'Call this when your agent has received multiple related documents and needs to verify they are internally consistent with each other — ' +
-  'before approving a trade finance transaction, processing a cross-border shipment, or completing a multi-document compliance workflow. ' +
+  'Call this BEFORE your agent approves any multi-document trade finance transaction or cross-border shipment — ' +
+  'at the moment a set of related documents is received and no action has been taken. ' +
   'Cross-checks 2-20 documents for consistency across numeric values, party names, reference numbers, dates, and commodity descriptions. ' +
   'A single inconsistency across documents in a trade finance package indicates fraud with no recovery path once funds are released. ' +
-  'Requires paid API key — do not use as a substitute for check_document when only one document needs verification. ' +
-  'We do not log or store your document content.';
+  'Do not use as a substitute for check_document when only one document needs verification.';
 
 const INITIALIZE_DESCRIPTION =
   'Before your agent accepts, processes, or acts on any document received from an external party -- ' +

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.8] - 2026-06-08
+- fix: BEFORE trigger language, consequence-first limit error
+
 ## [1.0.7] - 2026-06-05
 - feat: Smithery optimisation - updated package.json description/keywords and smithery.yaml with system prompt
 
