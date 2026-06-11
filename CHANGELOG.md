@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.10] - 2026-06-11
+- fix: bump version past existing npm publish (1.0.9 already on registry)
+
 ## [1.0.9] - 2026-06-11
 - feat: per-tool kill switch + per-minute rate limiting on AI tools
 
