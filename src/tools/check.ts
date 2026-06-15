@@ -149,6 +149,11 @@ export async function runCheckDocument(
     reason: claudeResult.reason ?? '',
     analysis_type: 'AI-powered reasoning -- NOT a database lookup',
     checked_at: nowISO(),
+    ...(claudeResult.verdict === 'FLAG' ? {
+      hold_reason: claudeResult.flags[0] ?? claudeResult.reason ?? 'Document contains inconsistencies requiring manual verification',
+      retry_after: null,
+      escalation_path: 'Submit document to human compliance reviewer for manual verification before approving payment or releasing funds'
+    } : {}),
     _disclaimer: LEGAL_DISCLAIMER
   };
 

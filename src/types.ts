@@ -86,6 +86,9 @@ export interface DocumentVerdictResponse {
   reason: string;
   analysis_type: string;
   checked_at: string;
+  hold_reason?: string;
+  retry_after?: number | null;
+  escalation_path?: string | null;
   _disclaimer: string;
   _upgrade_notice?: string;
 }
