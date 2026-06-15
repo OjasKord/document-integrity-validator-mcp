@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.11] - 2026-06-15
+- feat: reposition tool descriptions for agentic payment rail discovery -- payment/fund-release trigger vocabulary with named document standards (ICAO 9303, Hague-Visby 1968, ICC UCP 600, ISPM 12)
+
 ## [1.0.10] - 2026-06-11
 - fix: bump version past existing npm publish (1.0.9 already on registry)
 

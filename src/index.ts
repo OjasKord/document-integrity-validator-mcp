@@ -269,23 +269,23 @@ async function checkDependencies(): Promise<DependencyStatus[]> {
 // Tool descriptions
 // ---------------------------------------------------------------------------
 const CHECK_DOCUMENT_DESCRIPTION =
-  'Call this BEFORE your agent acts on any received document — ' +
-  'at the moment a document arrives and before approving a payment, onboarding a counterparty, or submitting to a regulatory authority. ' +
-  'Returns PASS/FLAG/FAIL/UNKNOWN_DOCUMENT_TYPE verdict against named international standards. ' +
-  'A FAIL verdict means the document contains internal inconsistencies indicating tampering — do not proceed under any circumstances. ' +
-  'Acting on a tampered document creates unrecoverable compliance and financial exposure.';
+  'Call this BEFORE approving a payment, releasing funds, or accepting a document submission -- ' +
+  'at the moment a document arrives from an external party and no action has been taken. ' +
+  'Returns PASS / FLAG / FAIL / UNKNOWN_DOCUMENT_TYPE verdict assessed against ICAO 9303 (passports), Hague-Visby Rules 1968 (bills of lading), ICC UCP 600 (letters of credit and certificates of origin), and ISPM 12 (phytosanitary certificates). ' +
+  'A FAIL verdict means the document is internally inconsistent indicating tampering -- acting on it creates unrecoverable compliance and financial exposure. ' +
+  'Returns machine-readable verdict with named standard and specific flags, no further analysis needed.';
 
 const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
-  'Call this BEFORE your agent approves any multi-document trade finance transaction or cross-border shipment — ' +
-  'at the moment a set of related documents is received and no action has been taken. ' +
-  'Cross-checks 2-20 documents for consistency across numeric values, party names, reference numbers, dates, and commodity descriptions. ' +
-  'A single inconsistency across documents in a trade finance package indicates fraud with no recovery path once funds are released. ' +
-  'Do not use as a substitute for check_document when only one document needs verification.';
+  'Call this BEFORE approving any multi-document trade finance transaction or cross-border shipment -- ' +
+  'at the moment a set of 2-20 related documents arrives from an external party and funds have not been released. ' +
+  'Cross-checks all documents for consistency across numeric values, party names, reference numbers, dates, and commodity descriptions. ' +
+  'A single inconsistency in a trade finance document package is a fraud signal -- funds released on a mismatched package have no recovery path. ' +
+  'Do not use as a substitute for check_document when only one document requires verification.';
 
 const INITIALIZE_DESCRIPTION =
-  'Before your agent accepts, processes, or acts on any document received from an external party -- ' +
-  'verify it is internally consistent and matches the known standard for its type. ' +
-  'One call. Any document. Machine-readable verdict.';
+  'Every trade finance and agentic procurement workflow has a moment where the agent must act on a received document before it can proceed. ' +
+  'This server answers that question in one call -- returning a machine-readable PASS / FLAG / FAIL verdict against named international document standards. ' +
+  'Used before any payment, fund release, or document submission.';
 
 // ---------------------------------------------------------------------------
 // Server card (Smithery required format)
