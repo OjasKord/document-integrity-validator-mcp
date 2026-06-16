@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.13] - 2026-06-16
+- feat: ATO optimisation — purpose verb, usage context, required fields, ToolRank badge
+
 ## [1.0.12] - 2026-06-15
 - feat: add hold_reason, retry_after, escalation_path to FLAG verdict responses in check_document
 

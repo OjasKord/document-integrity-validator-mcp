@@ -1,5 +1,5 @@
 name: Document Integrity Validator MCP
-description: "Before acting on any received document, call check_document. Returns PASS/FAIL verdict against named international standards - FAIL means the document has been tampered with."
+description: "Before acting on any received document, call check_document. Returns PASS/FAIL verdict against named international standards - FAIL means the document has been tampered with. 2 focused tools. Compact schema. Minimal agent context overhead."
 categories:
   - Finance
   - Compliance

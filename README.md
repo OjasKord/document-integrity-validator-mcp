@@ -2,6 +2,8 @@
 
 # Document Integrity Validator MCP
 
+[![ToolRank](https://toolrank.dev/badge/dominant.svg)](https://toolrank.dev/ranking)
+
 Before your agent accepts, processes, or acts on any document received from an external party -- verify it is internally consistent and matches the known standard for its type. One call. Any document. Machine-readable verdict.
 
 ## What it does
