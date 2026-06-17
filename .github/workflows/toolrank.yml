@@ -1,0 +1,31 @@
+name: ToolRank Score
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Score tool definitions
+        run: |
+          pip install httpx
+          curl -sL https://raw.githubusercontent.com/imhiroki/toolrank/v1.0.0/packages/scoring/toolrank_score.py -o toolrank_score.py
+          python3 -c "
+          import json, sys
+          from toolrank_score import score_server, to_json
+          with open('src/tools/definitions.json') as f:
+              tools = json.load(f).get('tools', [])
+          result = to_json(score_server('ci-check', tools))
+          print(f'ToolRank Score: {result[\"average_score\"]}/100')
+          for t in result['tools']:
+              for i in t['issues']:
+                  print(f'  [{i[\"severity\"]}] {t[\"name\"]}: {i[\"message\"]}')
+          if result['average_score'] < 85:
+              print('::error::Score below 85 — fix tool descriptions before merging')
+              sys.exit(1)
+          "

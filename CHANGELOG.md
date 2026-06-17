@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.15] - 2026-06-17
+- feat: add required fields to all tool inputSchemas; add ToolRank CI gate
+
 ## [1.0.14] - 2026-06-17
 - fix: Stripe webhook now validates payment_link ID — ignores events not belonging to this server
 - fix: webhook route registered before express.json() — raw body now reaches signature verifier correctly
