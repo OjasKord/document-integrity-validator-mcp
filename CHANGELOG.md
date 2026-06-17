@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.14] - 2026-06-17
+- fix: Stripe webhook now validates payment_link ID — ignores events not belonging to this server
+- fix: webhook route registered before express.json() — raw body now reaches signature verifier correctly
+
 ## [1.0.13] - 2026-06-16
 - feat: ATO optimisation — purpose verb, usage context, required fields, ToolRank badge
 
