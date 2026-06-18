@@ -50,6 +50,17 @@ export async function redisKeys(pattern: string): Promise<string[]> {
   } catch { return []; }
 }
 
+export async function redisDelete(key: string): Promise<void> {
+  try {
+    const res = await fetch(
+      `${UPSTASH_URL}/del/${encodeURIComponent(key)}`,
+      { method: 'POST', headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }
+    );
+    const data = await res.json() as { error?: string };
+    if (data.error) console.error('[Redis] redisDelete error:', data.error, 'key:', key);
+  } catch (e) { console.error('[Redis] redisDelete failed:', e); }
+}
+
 export async function appendSessionLog(ip: string, tool: string): Promise<void> {
   try {
     const ipSafe = ip.replace(/:/g, '_').replace(/\s/g, '');

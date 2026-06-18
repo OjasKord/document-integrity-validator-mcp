@@ -1,4 +1,4 @@
-export const VERSION = '1.0.15';
+export const VERSION = '1.0.16';
 export const PERSIST_FILE = '/tmp/docintegrity_stats.json';
 export const FREE_TIER_REDIS_KEY = 'docintegrity:free_tier_usage';
 export const FREE_TIER_LIMIT = 10;
