@@ -1,4 +1,5 @@
 import { callClaudeForDocument } from '../services/claude.js';
+import { notifyGateHit } from '../services/gate-notify.js';
 import {
   LEGAL_DISCLAIMER,
   nowISO,
@@ -106,6 +107,7 @@ export async function runCheckDocument(
     const effectiveLimit = getEffectiveLimit(ip, stats);
     const used = getCurrentMonthCalls(ip, stats);
     if (used >= effectiveLimit) {
+      notifyGateHit('Document Integrity Validator', ip, 'check_document', used, PRO_UPGRADE_URL);
       return { output: null, error: buildFreeTierLimitError(ip, stats) };
     }
   }

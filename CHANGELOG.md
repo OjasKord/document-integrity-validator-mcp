@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.17] - 2026-06-20
+- feat: email notification on free tier gate hit
+
 ## [1.0.16] - 2026-06-18
 - feat: revoke API key on Stripe refund
 
