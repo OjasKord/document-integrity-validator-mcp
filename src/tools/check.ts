@@ -80,6 +80,17 @@ export function buildFreeTierLimitError(
   };
 }
 
+export function checkFreeTierGate(ip: string, paid: boolean, stats: Stats): Record<string, unknown> | null {
+  if (paid) return null;
+  const effectiveLimit = getEffectiveLimit(ip, stats);
+  const used = getCurrentMonthCalls(ip, stats);
+  if (used >= effectiveLimit) {
+    notifyGateHit('Document Integrity Validator', ip, 'check_document', used, PRO_UPGRADE_URL);
+    return buildFreeTierLimitError(ip, stats);
+  }
+  return null;
+}
+
 export async function runCheckDocument(
   params: CheckDocumentInput,
   ip: string,
@@ -103,13 +114,9 @@ export async function runCheckDocument(
     };
   }
 
-  if (!paid) {
-    const effectiveLimit = getEffectiveLimit(ip, stats);
-    const used = getCurrentMonthCalls(ip, stats);
-    if (used >= effectiveLimit) {
-      notifyGateHit('Document Integrity Validator', ip, 'check_document', used, PRO_UPGRADE_URL);
-      return { output: null, error: buildFreeTierLimitError(ip, stats) };
-    }
+  const gateError = checkFreeTierGate(ip, paid, stats);
+  if (gateError) {
+    return { output: null, error: gateError };
   }
 
   let claudeResult;

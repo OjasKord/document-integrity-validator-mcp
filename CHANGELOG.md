@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.18] - 2026-06-23
+- fix: gate returns HTTP 402 (x402 standard for non-transient quota)
+
 ## [1.0.17] - 2026-06-20
 - feat: email notification on free tier gate hit
 

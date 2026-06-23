@@ -25,7 +25,8 @@ import { CheckDocumentPackageInputSchema } from './schemas/package-check.js';
 import {
   runCheckDocument,
   getEffectiveLimit,
-  verdictToAgentAction
+  verdictToAgentAction,
+  checkFreeTierGate
 } from './tools/check.js';
 import { runCheckDocumentPackage, buildPackagePaidOnlyError } from './tools/package-check.js';
 
@@ -789,6 +790,19 @@ async function runHTTP(): Promise<void> {
       req.ip ??
       '127.0.0.1';
     currentApiKey = (req.headers['x-api-key'] as string | undefined) ?? '';
+
+    const isToolDisabled = process.env['TOOL_DISABLED_CHECK_DOCUMENT'] === 'true';
+    if (!isToolDisabled && req.body?.method === 'tools/call' && req.body?.params?.name === 'check_document') {
+      const gateError = checkFreeTierGate(currentIP, isPaidKey(currentApiKey), stats);
+      if (gateError) {
+        res.status(402).set(cors).json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: { isError: true, content: [{ type: 'text', text: JSON.stringify(gateError) }] }
+        });
+        return;
+      }
+    }
 
     res.set(cors);
     const transport = new StreamableHTTPServerTransport({
