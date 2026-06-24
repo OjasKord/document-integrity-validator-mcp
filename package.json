@@ -1,6 +1,6 @@
 {
   "name": "document-integrity-validator-mcp",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Document integrity validator for AI agents. Verifies authenticity against international standards before acting on contents. PASS/FAIL verdict in one call.",
   "type": "module",
   "main": "dist/index.js",
