@@ -30,3 +30,21 @@ export const CheckDocumentInputSchema = z.object({
 }).strict();
 
 export type CheckDocumentInput = z.infer<typeof CheckDocumentInputSchema>;
+
+export const CheckDocumentOutputSchema = z.object({
+  agent_action: z.enum(['PROCEED', 'VERIFY_MANUALLY', 'HOLD', 'REFER_TO_HUMAN', 'UPGRADE_REQUIRED']),
+  verdict: z.enum(['PASS', 'FLAG', 'FAIL', 'UNKNOWN_DOCUMENT_TYPE']),
+  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW', 'NONE']),
+  document_type_identified: z.string().nullable(),
+  assessed_against: z.string().nullable().describe('Named standard, e.g. "ICAO Document 9303" -- null for UNKNOWN_DOCUMENT_TYPE'),
+  known_issuing_standard: z.string().nullable(),
+  flags: z.array(z.string()),
+  reason: z.string(),
+  analysis_type: z.string(),
+  checked_at: z.string(),
+  hold_reason: z.string().optional(),
+  retry_after: z.number().nullable().optional(),
+  escalation_path: z.string().nullable().optional(),
+  _disclaimer: z.string(),
+  _upgrade_notice: z.string().optional()
+});

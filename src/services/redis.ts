@@ -72,3 +72,53 @@ export async function appendSessionLog(ip: string, tool: string): Promise<void> 
     await redisExpire(key, 86400);
   } catch (e) { console.error('[SessionLog] internal error:', e); }
 }
+
+export async function redisIncr(key: string): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `${UPSTASH_URL}/incr/${encodeURIComponent(key)}`,
+      { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }
+    );
+    const data = await res.json() as { error?: string; result?: number };
+    if (data.error) { console.error('[Redis] redisIncr error:', data.error, 'key:', key); return null; }
+    return data.result ?? null;
+  } catch (e) { console.error('[Redis] redisIncr failed:', e); return null; }
+}
+
+function truncateIp(ip: string): string {
+  const parts = (ip || '').split('.');
+  return parts.length === 4 ? parts.slice(0, 3).join('.') + '.0' : ip;
+}
+
+// ─── FLEET CROSS-SERVER OPERATOR DETECTION ─────────────────────────────────
+export async function recordFleetGateHit(ip: string): Promise<void> {
+  try {
+    const ip24 = truncateIp(ip);
+    const key = `fleet:ip24:${ip24}:${REDIS_PREFIX}`;
+    await redisSet(key, new Date().toISOString());
+    await redisExpire(key, 30 * 24 * 60 * 60);
+  } catch (e) { console.error('[Fleet] recordFleetGateHit failed:', e); }
+}
+
+export async function buildCrossServerNote(ip: string): Promise<string | null> {
+  try {
+    const ip24 = truncateIp(ip);
+    const keys = await redisKeys(`fleet:ip24:${ip24}:*`);
+    if (keys.length >= 3) {
+      return 'Cross-server trial extension available -- this operator is already using ' + keys.length + ' Kord Agencies MCP servers. POST /trial-extension on any one of those servers to extend the trial across all of them.';
+    }
+    return null;
+  } catch { return null; }
+}
+
+// ─── UPTIME TRACKING (for /public-stats) ────────────────────────────────────
+export async function initUptimeTracking(heartbeatKey: string, monitoringStartKey: string, intervalMs: number): Promise<void> {
+  try {
+    let started = await redisGet(monitoringStartKey) as string | null;
+    if (!started) {
+      started = new Date().toISOString();
+      await redisSet(monitoringStartKey, started);
+    }
+    setInterval(() => { redisIncr(heartbeatKey).catch(() => {}); }, intervalMs);
+  } catch (e) { console.error('[Uptime] initUptimeTracking failed:', e); }
+}

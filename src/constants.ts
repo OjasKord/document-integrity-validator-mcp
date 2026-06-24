@@ -1,4 +1,11 @@
-export const VERSION = '1.0.18';
+export const VERSION = '1.0.19';
+export const FIRST_DEPLOYED = '2026-05-06T09:58:47Z';
+export const LIFETIME_CALLS_REDIS_KEY = 'docintegrity:lifetime_calls';
+export const UPTIME_HEARTBEAT_KEY = 'docintegrity:uptime:heartbeat_count';
+export const UPTIME_MONITORING_START_KEY = 'docintegrity:uptime:monitoring_started';
+export const UPTIME_HEARTBEAT_INTERVAL_MS = 60000;
+export const FLEET_IP24_TTL_SECONDS = 30 * 24 * 60 * 60;
+export const FLEET_CROSS_SERVER_THRESHOLD = 3;
 export const PERSIST_FILE = '/tmp/docintegrity_stats.json';
 export const FREE_TIER_REDIS_KEY = 'docintegrity:free_tier_usage';
 export const FREE_TIER_LIMIT = 10;

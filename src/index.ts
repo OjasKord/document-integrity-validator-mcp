@@ -16,12 +16,17 @@ import {
   FREE_TIER_REDIS_KEY,
   FREE_TIER_LIMIT,
   ALLOWED_PAYMENT_LINK_IDS,
+  FIRST_DEPLOYED,
+  LIFETIME_CALLS_REDIS_KEY,
+  UPTIME_HEARTBEAT_KEY,
+  UPTIME_MONITORING_START_KEY,
+  UPTIME_HEARTBEAT_INTERVAL_MS,
   nowISO
 } from './constants.js';
 import type { Stats, DependencyStatus, ServerCard, PaidKeyInfo } from './types.js';
-import { REDIS_PREFIX, redisGet, redisSet, redisKeys, redisDelete, appendSessionLog } from './services/redis.js';
-import { CheckDocumentInputSchema } from './schemas/check.js';
-import { CheckDocumentPackageInputSchema } from './schemas/package-check.js';
+import { REDIS_PREFIX, redisGet, redisSet, redisKeys, redisDelete, appendSessionLog, redisIncr, initUptimeTracking } from './services/redis.js';
+import { CheckDocumentInputSchema, CheckDocumentOutputSchema } from './schemas/check.js';
+import { CheckDocumentPackageInputSchema, CheckDocumentPackageOutputSchema } from './schemas/package-check.js';
 import {
   runCheckDocument,
   getEffectiveLimit,
@@ -435,6 +440,7 @@ server.registerTool(
     title: 'Check Document Integrity',
     description: CHECK_DOCUMENT_DESCRIPTION,
     inputSchema: CheckDocumentInputSchema,
+    outputSchema: CheckDocumentOutputSchema,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -446,10 +452,10 @@ server.registerTool(
     // checkAccess() runs ONLY here -- inside the tools/call branch
     const ip = currentIP;
     if (process.env['TOOL_DISABLED_CHECK_DOCUMENT'] === 'true') {
-      return { content: [{ type: 'text' as const, text: JSON.stringify({ error: 'This tool is temporarily unavailable for maintenance.', agent_action: 'RETRY_IN_30_MIN', retryable: true, retry_after_ms: 1800000 }) }] };
+      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: 'This tool is temporarily unavailable for maintenance.', agent_action: 'RETRY_IN_30_MIN', retryable: true, retry_after_ms: 1800000 }) }] };
     }
     if (!checkPerMinuteLimit(ip, 'check_document', 5)) {
-      return { content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Rate limit exceeded — maximum 5 calls per minute per IP on AI-powered tools. Your workflow is calling this tool too rapidly.', agent_action: 'RETRY_IN_60_SEC', retryable: true, retry_after_ms: 60000, limit: 5, window: '1 minute' }) }] };
+      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Rate limit exceeded — maximum 5 calls per minute per IP on AI-powered tools. Your workflow is calling this tool too rapidly.', agent_action: 'RETRY_IN_60_SEC', retryable: true, retry_after_ms: 60000, limit: 5, window: '1 minute' }) }] };
     }
     const paid = isPaidKey(currentApiKey);
 
@@ -478,6 +484,7 @@ server.registerTool(
     } else {
       saveStats(stats);
     }
+    redisIncr(LIFETIME_CALLS_REDIS_KEY).catch(() => {});
     appendSessionLog(ip, 'check_document').catch((e) => console.error('[SessionLog] appendSessionLog failed:', e));
 
     const output = result.output!;
@@ -511,6 +518,7 @@ server.registerTool(
     title: 'Check Document Package Integrity',
     description: CHECK_DOCUMENT_PACKAGE_DESCRIPTION,
     inputSchema: CheckDocumentPackageInputSchema,
+    outputSchema: CheckDocumentPackageOutputSchema,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -521,10 +529,10 @@ server.registerTool(
   async (params) => {
     // checkAccess() runs ONLY here -- inside the tools/call branch
     if (process.env['TOOL_DISABLED_CHECK_DOCUMENT_PACKAGE'] === 'true') {
-      return { content: [{ type: 'text' as const, text: JSON.stringify({ error: 'This tool is temporarily unavailable for maintenance.', agent_action: 'RETRY_IN_30_MIN', retryable: true, retry_after_ms: 1800000 }) }] };
+      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: 'This tool is temporarily unavailable for maintenance.', agent_action: 'RETRY_IN_30_MIN', retryable: true, retry_after_ms: 1800000 }) }] };
     }
     if (!checkPerMinuteLimit(currentIP, 'check_document_package', 5)) {
-      return { content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Rate limit exceeded — maximum 5 calls per minute per IP on AI-powered tools. Your workflow is calling this tool too rapidly.', agent_action: 'RETRY_IN_60_SEC', retryable: true, retry_after_ms: 60000, limit: 5, window: '1 minute' }) }] };
+      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Rate limit exceeded — maximum 5 calls per minute per IP on AI-powered tools. Your workflow is calling this tool too rapidly.', agent_action: 'RETRY_IN_60_SEC', retryable: true, retry_after_ms: 60000, limit: 5, window: '1 minute' }) }] };
     }
     const paid = isPaidKey(currentApiKey);
 
@@ -534,7 +542,7 @@ server.registerTool(
         content: [
           {
             type: 'text' as const,
-            text: JSON.stringify(buildPackagePaidOnlyError())
+            text: JSON.stringify(await buildPackagePaidOnlyError(currentIP))
           }
         ]
       };
@@ -559,6 +567,7 @@ server.registerTool(
     }
 
     saveStats(stats);
+    redisIncr(LIFETIME_CALLS_REDIS_KEY).catch(() => {});
     appendSessionLog(currentIP, 'check_document_package').catch((e) => console.error('[SessionLog] appendSessionLog failed:', e));
 
     const output = result.output!;
@@ -637,6 +646,31 @@ async function runHTTP(): Promise<void> {
     res.set(cors).json(getStatsPayload());
   });
 
+  // Unauthenticated machine-readable track record -- for agent orchestrators
+  // evaluating server trustworthiness, not for humans. No stats-key required.
+  app.get('/public-stats', (_req, res) => {
+    void (async () => {
+      const [lifetimeCallsRaw, heartbeatCountRaw, monitoringStart] = await Promise.all([
+        redisGet(LIFETIME_CALLS_REDIS_KEY),
+        redisGet(UPTIME_HEARTBEAT_KEY),
+        redisGet(UPTIME_MONITORING_START_KEY)
+      ]);
+      const lifetimeCalls = (lifetimeCallsRaw as number | null) ?? 0;
+      const heartbeatCount = (heartbeatCountRaw as number | null) ?? 0;
+      const monitoringStartTime = monitoringStart ? new Date(monitoringStart as string).getTime() : Date.now();
+      const elapsedMs = Math.max(1, Date.now() - monitoringStartTime);
+      const uptimePct = Math.min(100, Math.round((heartbeatCount * UPTIME_HEARTBEAT_INTERVAL_MS / elapsedMs) * 1000) / 10);
+      res.set(cors).json({
+        server: 'document-integrity-validator-mcp',
+        version: VERSION,
+        first_deployed: FIRST_DEPLOYED,
+        total_lifetime_tool_calls: lifetimeCalls,
+        uptime_percentage: uptimePct,
+        uptime_monitoring_since: monitoringStart ?? nowISO()
+      });
+    })();
+  });
+
   app.get('/session-log', (req, res) => {
     if (req.headers['x-stats-key'] !== STATS_KEY) {
       res.status(401).set(cors).json({ error: 'Unauthorized' });
@@ -707,6 +741,9 @@ async function runHTTP(): Promise<void> {
     };
     saveStats(stats);
 
+    // 24h follow-up record -- processed by /process-trial-followups (fleet cron)
+    await redisSet(REDIS_PREFIX + ':followup:' + email.toLowerCase().trim(), { email, name, server: 'document-integrity-validator-mcp', granted_at: nowISO(), sent: false });
+
     await sendEmail(
       'ojas@kordagencies.com',
       'Document Integrity Validator -- Trial Extension: ' + name,
@@ -733,6 +770,40 @@ async function runHTTP(): Promise<void> {
       message: TRIAL_EXTENSION_CALLS + ' extra free calls added. Check your email for confirmation.',
       upgrade_url: PRO_UPGRADE_URL
     });
+  });
+
+  // Fleet cron hits this hourly. Sends exactly one follow-up email per email
+  // address, 24h after a trial extension was granted, unless that email has
+  // since picked up a paid key on this server.
+  app.post('/process-trial-followups', (req, res) => {
+    if (req.headers['x-stats-key'] !== STATS_KEY) {
+      res.status(401).set(cors).json({ error: 'Unauthorized' });
+      return;
+    }
+    void (async () => {
+      const keys = await redisKeys(REDIS_PREFIX + ':followup:*');
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+      let processed = 0, sent = 0, skippedPaid = 0;
+      for (const key of keys) {
+        const record = await redisGet(key) as { email: string; name: string; granted_at: string; sent: boolean; sent_at?: string } | null;
+        if (!record || record.sent) continue;
+        if (Date.now() - new Date(record.granted_at).getTime() < TWENTY_FOUR_HOURS_MS) continue;
+        processed++;
+        const emailNorm = (record.email || '').toLowerCase().trim();
+        const hasPaidKey = Object.values(stats.paid_api_keys).some(r => (r.email || '').toLowerCase().trim() === emailNorm);
+        if (hasPaidKey) {
+          skippedPaid++;
+        } else {
+          await sendEmail(record.email, 'Document Integrity Validator MCP -- document verification will block your workflow again without an upgrade',
+            '<p>Hi ' + record.name + ',</p><p>Your trial extension on Document Integrity Validator MCP was granted 24 hours ago. Once those extra calls run out, document verification stops and any payment or fund-release workflow that depends on it pauses until you upgrade.</p><p>Upgrade now -- $29/month for 500 calls: ' + PRO_UPGRADE_URL + '</p><p>Ojas<br>kordagencies.com</p>');
+          sent++;
+        }
+        record.sent = true;
+        record.sent_at = nowISO();
+        await redisSet(key, record);
+      }
+      res.set(cors).json({ checked: keys.length, processed, emails_sent: sent, skipped_already_paid: skippedPaid });
+    })();
   });
 
   // Daily report -- JSON only, for Bizfile aggregation
@@ -793,7 +864,7 @@ async function runHTTP(): Promise<void> {
 
     const isToolDisabled = process.env['TOOL_DISABLED_CHECK_DOCUMENT'] === 'true';
     if (!isToolDisabled && req.body?.method === 'tools/call' && req.body?.params?.name === 'check_document') {
-      const gateError = checkFreeTierGate(currentIP, isPaidKey(currentApiKey), stats);
+      const gateError = await checkFreeTierGate(currentIP, isPaidKey(currentApiKey), stats);
       if (gateError) {
         res.status(402).set(cors).json({
           jsonrpc: '2.0',
@@ -819,6 +890,7 @@ async function runHTTP(): Promise<void> {
     void (async () => {
       await loadApiKeysFromRedis();
       await loadFreeTierFromRedis();
+      await initUptimeTracking(UPTIME_HEARTBEAT_KEY, UPTIME_MONITORING_START_KEY, UPTIME_HEARTBEAT_INTERVAL_MS);
       console.error(`document-integrity-validator-mcp running on http://localhost:${port}/mcp`);
     })();
   });

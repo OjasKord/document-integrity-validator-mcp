@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.19] - 2026-06-24
+- feat: unauthenticated /public-stats endpoint -- first_deployed, lifetime tool calls, uptime %, version, for agent orchestrators evaluating server trustworthiness
+- feat: /process-trial-followups endpoint + 24h follow-up record on trial-extension grant
+- feat: gate responses (check_document free-tier limit and check_document_package paid-only) now self-contained (server + workflow impact + upgrade path in one sentence) and detect cross-server operators via shared fleet Redis, with cross-server trial-extension note
+- feat: outputSchema added to both tools via Zod (additive). Added isError:true to the kill-switch and rate-limit paths on both tools so the MCP SDK's output validation doesn't reject them now that outputSchema is enforced
+- fix: smithery.yaml claimed "Returns PASS/FAIL verdict" -- the real verdict enum has 4 values (PASS/FLAG/FAIL/UNKNOWN_DOCUMENT_TYPE). Corrected and named the actual standards (ICAO 9303, Hague-Visby Rules, ICC UCP 600, ISPM 12)
+- note: check_document_package's paid-only gate still returns HTTP 200 instead of 402 -- this is the documented MCP SDK limitation (no Express-level pre-check exists for this gate, unlike check_document's free-tier gate), tracked separately, not fixed in this pass
+
 ## [1.0.18] - 2026-06-23
 - fix: gate returns HTTP 402 (x402 standard for non-transient quota)
 

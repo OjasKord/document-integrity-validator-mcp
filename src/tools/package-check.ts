@@ -1,4 +1,5 @@
 import { callClaudeForPackage } from '../services/claude.js';
+import { recordFleetGateHit, buildCrossServerNote } from '../services/redis.js';
 import { LEGAL_DISCLAIMER, nowISO, PRO_UPGRADE_URL } from '../constants.js';
 import type {
   AgentAction,
@@ -101,10 +102,12 @@ export async function runCheckDocumentPackage(
   return { output, error: null };
 }
 
-export function buildPackagePaidOnlyError(): Record<string, unknown> {
+export async function buildPackagePaidOnlyError(ip: string): Promise<Record<string, unknown>> {
+  recordFleetGateHit(ip).catch(() => {});
+  const crossServerNote = await buildCrossServerNote(ip);
   return {
     agent_action: 'UPGRADE_REQUIRED' as AgentAction,
-    error: 'Pro API key required. check_document_package has no free tier.',
+    error: `Document Integrity Validator package checking is paid-only -- cross-document consistency checking is blocked for this workflow until you upgrade at ${PRO_UPGRADE_URL}. Pro API key required. check_document_package has no free tier.${crossServerNote ? ' ' + crossServerNote : ''}`,
     likely_cause: 'No valid x-api-key header was provided.',
     agent_instruction:
       `Inform the user that check_document_package requires a Pro or Enterprise subscription. ` +

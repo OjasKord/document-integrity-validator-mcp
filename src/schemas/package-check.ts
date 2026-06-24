@@ -42,3 +42,30 @@ export const CheckDocumentPackageInputSchema = z.object({
 
 export type DocumentItem = z.infer<typeof DocumentItemSchema>;
 export type CheckDocumentPackageInput = z.infer<typeof CheckDocumentPackageInputSchema>;
+
+const AgentActionEnum = z.enum(['PROCEED', 'VERIFY_MANUALLY', 'HOLD', 'REFER_TO_HUMAN', 'UPGRADE_REQUIRED']);
+const VerdictEnum = z.enum(['PASS', 'FLAG', 'FAIL', 'UNKNOWN_DOCUMENT_TYPE']);
+const ConfidenceEnum = z.enum(['HIGH', 'MEDIUM', 'LOW', 'NONE']);
+
+export const CheckDocumentPackageOutputSchema = z.object({
+  agent_action: AgentActionEnum,
+  verdict: VerdictEnum,
+  confidence: ConfidenceEnum,
+  documents: z.array(z.object({
+    label: z.string(),
+    agent_action: AgentActionEnum,
+    verdict: VerdictEnum,
+    confidence: ConfidenceEnum,
+    document_type_identified: z.string().nullable(),
+    assessed_against: z.string().nullable(),
+    known_issuing_standard: z.string().nullable(),
+    flags: z.array(z.string()),
+    reason: z.string()
+  })),
+  cross_document_conflicts: z.array(z.string()),
+  package_verdict: VerdictEnum,
+  package_agent_action: AgentActionEnum,
+  analysis_type: z.string(),
+  checked_at: z.string(),
+  _disclaimer: z.string()
+});
