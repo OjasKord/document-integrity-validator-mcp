@@ -67,5 +67,8 @@ export const CheckDocumentPackageOutputSchema = z.object({
   package_agent_action: AgentActionEnum,
   analysis_type: z.string(),
   checked_at: z.string(),
-  _disclaimer: z.string()
+  _disclaimer: z.string(),
+  calls_remaining: z.union([z.number(), z.literal('unlimited')]),
+  verdict_ttl: z.number(),
+  data_source_status: z.enum(['full', 'degraded', 'partial'])
 });

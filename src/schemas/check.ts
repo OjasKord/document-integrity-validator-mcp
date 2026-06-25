@@ -46,5 +46,8 @@ export const CheckDocumentOutputSchema = z.object({
   retry_after: z.number().nullable().optional(),
   escalation_path: z.string().nullable().optional(),
   _disclaimer: z.string(),
-  _upgrade_notice: z.string().optional()
+  _upgrade_notice: z.string().optional(),
+  calls_remaining: z.union([z.number(), z.literal('unlimited')]),
+  verdict_ttl: z.number(),
+  data_source_status: z.enum(['full', 'degraded', 'partial'])
 });

@@ -96,7 +96,10 @@ export async function runCheckDocumentPackage(
     package_agent_action: packageAgentAction,
     analysis_type: 'AI-powered reasoning -- NOT a database lookup',
     checked_at: nowISO(),
-    _disclaimer: LEGAL_DISCLAIMER
+    _disclaimer: LEGAL_DISCLAIMER,
+    calls_remaining: 'unlimited', // check_document_package has no free tier -- paid-only
+    verdict_ttl: 0, // never cache -- document integrity must always be re-checked live
+    data_source_status: 'full' // Anthropic is a hard dependency above -- any verdict means it responded
   };
 
   return { output, error: null };

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.20] - 2026-06-25
+- feat: calls_remaining field added to check_document (numeric free-tier headroom, "unlimited" for paid keys) and check_document_package ("unlimited" -- always paid-only, no free tier)
+- feat: verdict_ttl field added to both tools, value 0 -- document integrity must always be re-checked live, never cached
+- feat: data_source_status field added to both tools -- Anthropic is the sole data source and a hard dependency (failure returns an error response with no verdict, never a soft-degraded fallback), so any verdict reaching the response, including UNKNOWN_DOCUMENT_TYPE, is "full"
+- Task 1 (purpose verb + required fields) reviewed -- already correct from a prior pass: both tool descriptions start with "Validates", and required arrays correctly reflect the OR-constraint on document_text/document_image (neither can be unconditionally required since either one alone suffices)
+
 ## [1.0.19] - 2026-06-24
 - feat: unauthenticated /public-stats endpoint -- first_deployed, lifetime tool calls, uptime %, version, for agent orchestrators evaluating server trustworthiness
 - feat: /process-trial-followups endpoint + 24h follow-up record on trial-extension grant

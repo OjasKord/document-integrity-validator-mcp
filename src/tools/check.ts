@@ -166,7 +166,13 @@ export async function runCheckDocument(
       retry_after: null,
       escalation_path: 'Submit document to human compliance reviewer for manual verification before approving payment or releasing funds'
     } : {}),
-    _disclaimer: LEGAL_DISCLAIMER
+    _disclaimer: LEGAL_DISCLAIMER,
+    calls_remaining: paid ? 'unlimited' : remaining,
+    verdict_ttl: 0, // never cache -- document integrity must always be re-checked live
+    // Anthropic is the only data source and is a hard dependency above (callClaudeForDocument
+    // throw -> error response, no verdict). Any verdict reaching here, including
+    // UNKNOWN_DOCUMENT_TYPE, means Claude responded successfully -- always "full".
+    data_source_status: 'full'
   };
 
   if (!paid && remaining <= FREE_TIER_LIMIT - FREE_TIER_WARNING) {

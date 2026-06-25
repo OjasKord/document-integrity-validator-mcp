@@ -91,6 +91,9 @@ export interface DocumentVerdictResponse {
   escalation_path?: string | null;
   _disclaimer: string;
   _upgrade_notice?: string;
+  calls_remaining: number | 'unlimited';
+  verdict_ttl: number;
+  data_source_status: 'full' | 'degraded' | 'partial';
 }
 
 export interface PackageDocumentVerdict {
@@ -116,4 +119,7 @@ export interface PackageVerdictResponse {
   analysis_type: string;
   checked_at: string;
   _disclaimer: string;
+  calls_remaining: number | 'unlimited';
+  verdict_ttl: number;
+  data_source_status: 'full' | 'degraded' | 'partial';
 }
