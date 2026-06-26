@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.21] - 2026-06-26
+- fix: trial extension requests now written to Redis (docintegrity:trial:{email}) on grant -- permanent audit trail that survives redeploys; previously in-memory only
+
 ## [1.0.20] - 2026-06-25
 - feat: calls_remaining field added to check_document (numeric free-tier headroom, "unlimited" for paid keys) and check_document_package ("unlimited" -- always paid-only, no free tier)
 - feat: verdict_ttl field added to both tools, value 0 -- document integrity must always be re-checked live, never cached
