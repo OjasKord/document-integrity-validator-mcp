@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.23] - 2026-06-28
+- fix: gate email dedup — notifyGateHit now async with docintegrity:gate_email:{ip} Redis key, 1-hour TTL; retries suppressed
+- fix: 402 gate response agent_action changed to HALT_WORKFLOW; added retryable: false, retry_after_ms: null
+- fix: trial_extension structured field already present; agent_action now actionable for agents
+
+## [1.0.22] - 2026-06-28
+- feat: owner key bypass (OWNER_KEY env var) — fleet owner bypasses free tier and paid-only gates
+
 ## [1.0.21] - 2026-06-26
 - fix: trial extension requests now written to Redis (docintegrity:trial:{email}) on grant -- permanent audit trail that survives redeploys; previously in-memory only
 

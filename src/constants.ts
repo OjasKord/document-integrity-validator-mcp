@@ -1,4 +1,4 @@
-export const VERSION = '1.0.22';
+export const VERSION = '1.0.23';
 export const FIRST_DEPLOYED = '2026-05-06T09:58:47Z';
 export const LIFETIME_CALLS_REDIS_KEY = 'docintegrity:lifetime_calls';
 export const UPTIME_HEARTBEAT_KEY = 'docintegrity:uptime:heartbeat_count';
