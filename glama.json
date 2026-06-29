@@ -1,6 +1,18 @@
 {
-  "name": "document-integrity-validator-mcp",
-  "description": "MCP server that checks any document against its international standard before your agent acts on it. AI-powered reasoning, no external database.",
-  "homepage": "https://kordagencies.com",
-  "license": "UNLICENSED"
+  "$schema": "https://glama.ai/mcp/servers/schema.json",
+  "name": "Document Integrity Validator MCP",
+  "description": "Checks any document against its international standard before your agent acts on it. AI-powered reasoning, no external database. Returns COMPLIANT/NON_COMPLIANT/REQUIRES_REVIEW verdict with deviation list and remediation steps.",
+  "license": "UNLICENSED",
+  "categories": [
+    "legal-and-compliance",
+    "developer-tools"
+  ],
+  "remote": {
+    "transport": "http",
+    "url": "https://document-integrity-validator-mcp-production.up.railway.app/mcp"
+  },
+  "links": {
+    "homepage": "https://kordagencies.com",
+    "npm": "https://www.npmjs.com/package/document-integrity-validator-mcp"
+  }
 }
