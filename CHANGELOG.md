@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.24] - 2026-06-29
+- feat: add GET /.well-known/glama.json ownership endpoint for Glama registry verification
+
 ## [1.0.23] - 2026-06-28
 - fix: gate email dedup — notifyGateHit now async with docintegrity:gate_email:{ip} Redis key, 1-hour TTL; retries suppressed
 - fix: 402 gate response agent_action changed to HALT_WORKFLOW; added retryable: false, retry_after_ms: null
