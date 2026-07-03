@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.28] - 2026-07-03
+- fix: description-accuracy correction across check_document/check_document_package tool descriptions (index.ts, definitions.json) and the Smithery listing (smithery.yaml agentRole, description, systemPrompt) -- "assessed against [standard]" and "verify authenticity" overstated capability the system prompt doesn't have (standards are labels populated per Rule 2, not standard-specific check logic); replaced with "internal consistency and completeness, naming the applicable standard". Hedged "indicating tampering" -> "may indicate tampering" and "is a fraud signal" -> "may indicate fraud" across both tools, since a consistency check can't distinguish tampering/fraud from clerical error, OCR misread, or legitimate cross-document variance. Dropped "no further analysis needed" (overstated verdict finality). Text only, no behavior change.
+- fix: package.json version had drifted one patch behind constants.ts VERSION and CHANGELOG (package.json stuck at 1.0.26 while VERSION/CHANGELOG were already at 1.0.27 from the prior commit) -- both now agree at 1.0.28
+
 ## [1.0.27] - 2026-07-03
 - fix: check_document's check_document_package hint now notes it's paid tier -- prevents free-tier agents from being routed into a silent 402. Text only, no behavior change.
 

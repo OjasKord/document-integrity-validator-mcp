@@ -326,13 +326,13 @@ async function checkDependencies(): Promise<DependencyStatus[]> {
 // Tool descriptions
 // ---------------------------------------------------------------------------
 const CHECK_DOCUMENT_DESCRIPTION =
-  'Validates a document against international standards for authenticity and internal consistency. ' +
+  'Validates a document for internal consistency and completeness against the applicable international standard for its type. ' +
   'Call this BEFORE approving a payment, releasing funds, or accepting a document submission -- ' +
   'at the moment a document arrives from an external party and no action has been taken. ' +
   'Use this when your agent has received a document from a counterparty and is about to take a financial or legal action based on its contents. ' +
-  'Returns PASS / FLAG / FAIL / UNKNOWN_DOCUMENT_TYPE verdict assessed against ICAO 9303 (passports), Hague-Visby Rules 1968 (bills of lading), ICC UCP 600 (letters of credit and certificates of origin), and ISPM 12 (phytosanitary certificates). ' +
-  'A FAIL verdict means the document is internally inconsistent indicating tampering -- acting on it creates unrecoverable compliance and financial exposure. ' +
-  'Returns machine-readable verdict with named standard and specific flags, no further analysis needed. ' +
+  'Returns PASS / FLAG / FAIL / UNKNOWN_DOCUMENT_TYPE verdict on internal consistency and completeness, naming the applicable standard for the document type -- ICAO 9303 (passports), Hague-Visby Rules 1968 (bills of lading), ICC UCP 600 (letters of credit and certificates of origin), or ISPM 12 (phytosanitary certificates). ' +
+  'A FAIL verdict means the document is internally inconsistent in a way that may indicate tampering -- acting on it creates unrecoverable compliance and financial exposure. ' +
+  'Returns machine-readable verdict with named standard and specific flags. ' +
   'When you have 2-20 related documents (e.g. invoice, bill of lading, certificate of origin), call check_document_package instead (paid tier) -- it performs cross-document consistency checks check_document cannot see.';
 
 const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
@@ -342,7 +342,7 @@ const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
   'Use this when your agent has received a full trade finance package — such as invoice, bill of lading, and certificate of origin together — and must verify all documents are consistent with each other before releasing funds. ' +
   'Returns PASS/FLAG/FAIL verdict per document with mismatch details. ' +
   'Cross-checks all documents for consistency across numeric values, party names, reference numbers, dates, and commodity descriptions. ' +
-  'A single inconsistency in a trade finance document package is a fraud signal -- funds released on a mismatched package have no recovery path. ' +
+  'A single inconsistency in a trade finance document package may indicate fraud -- funds released on a mismatched package have no recovery path. ' +
   'Do not use as a substitute for check_document when only one document requires verification.';
 
 const INITIALIZE_DESCRIPTION =
