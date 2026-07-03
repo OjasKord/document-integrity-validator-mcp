@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.27] - 2026-07-03
+- fix: check_document's check_document_package hint now notes it's paid tier -- prevents free-tier agents from being routed into a silent 402. Text only, no behavior change.
+
 ## [1.0.26] - 2026-07-03
 - fix: tool description gap — check_document now chains to check_document_package for 2-20 related documents needing cross-document consistency checks, per the 5-element description pattern
 
