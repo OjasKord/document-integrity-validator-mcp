@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.26] - 2026-07-03
+- fix: tool description gap — check_document now chains to check_document_package for 2-20 related documents needing cross-document consistency checks, per the 5-element description pattern
+
 ## [1.0.24] - 2026-06-29
 - feat: add GET /.well-known/glama.json ownership endpoint for Glama registry verification
 

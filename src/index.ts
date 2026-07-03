@@ -332,7 +332,8 @@ const CHECK_DOCUMENT_DESCRIPTION =
   'Use this when your agent has received a document from a counterparty and is about to take a financial or legal action based on its contents. ' +
   'Returns PASS / FLAG / FAIL / UNKNOWN_DOCUMENT_TYPE verdict assessed against ICAO 9303 (passports), Hague-Visby Rules 1968 (bills of lading), ICC UCP 600 (letters of credit and certificates of origin), and ISPM 12 (phytosanitary certificates). ' +
   'A FAIL verdict means the document is internally inconsistent indicating tampering -- acting on it creates unrecoverable compliance and financial exposure. ' +
-  'Returns machine-readable verdict with named standard and specific flags, no further analysis needed.';
+  'Returns machine-readable verdict with named standard and specific flags, no further analysis needed. ' +
+  'When you have 2-20 related documents (e.g. invoice, bill of lading, certificate of origin), call check_document_package instead -- it performs cross-document consistency checks that check_document cannot see.';
 
 const CHECK_DOCUMENT_PACKAGE_DESCRIPTION =
   'Validates a package of 2-20 related trade finance documents for cross-document consistency. ' +
