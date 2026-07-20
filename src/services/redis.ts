@@ -19,8 +19,8 @@ export async function redisGet(key: string): Promise<unknown> {
 export async function redisSet(key: string, value: unknown): Promise<void> {
   try {
     const res = await fetch(
-      `${process.env.UPSTASH_REDIS_REST_URL}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`,
-      { method: 'GET', headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
+      `${UPSTASH_URL}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`,
+      { method: 'GET', headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }
     );
     const data = await res.json() as { error?: string };
     if (data.error) console.error('[Redis] redisSet error:', data.error, 'key:', key);
