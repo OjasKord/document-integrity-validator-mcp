@@ -1,6 +1,5 @@
 import { callClaudeForDocument } from '../services/claude.js';
-import { notifyGateHit } from '../services/gate-notify.js';
-import { recordFleetGateHit, buildCrossServerNote } from '../services/redis.js';
+import { recordFleetGateHit, buildCrossServerNote, appendSessionLog } from '../services/redis.js';
 import {
   LEGAL_DISCLAIMER,
   nowISO,
@@ -90,7 +89,12 @@ export async function checkFreeTierGate(ip: string, paid: boolean, stats: Stats)
   const effectiveLimit = getEffectiveLimit(ip, stats);
   const used = getCurrentMonthCalls(ip, stats);
   if (used >= effectiveLimit) {
-    notifyGateHit('Document Integrity Validator', ip, 'check_document', used, PRO_UPGRADE_URL).catch(() => {});
+    // Gate hits (free-tier exhausted) return before the normal success-path
+    // counters run -- log it here so /daily-report and /stats see gate
+    // volume as EVENTS instead of being blind to them. No email on a raw
+    // gate hit (removed 2026-07-27) -- email only on trial-extension
+    // request or a Stripe payment event.
+    appendSessionLog(ip, 'check_document', 'gated').catch(() => {});
     return await buildFreeTierLimitError(ip, stats);
   }
   return null;

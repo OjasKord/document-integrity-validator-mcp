@@ -61,13 +61,13 @@ export async function redisDelete(key: string): Promise<void> {
   } catch (e) { console.error('[Redis] redisDelete failed:', e); }
 }
 
-export async function appendSessionLog(ip: string, tool: string): Promise<void> {
+export async function appendSessionLog(ip: string, tool: string, tier: string = 'success'): Promise<void> {
   try {
     const ipSafe = ip.replace(/:/g, '_').replace(/\s/g, '');
     const dayKey = new Date().toISOString().slice(0, 10);
     const key = `${REDIS_PREFIX}:session:${ipSafe}:${dayKey}`;
-    const existing = (await redisGet(key) as Array<{ tool: string; timestamp: string }> | null) ?? [];
-    existing.push({ tool, timestamp: new Date().toISOString() });
+    const existing = (await redisGet(key) as Array<{ tool: string; timestamp: string; tier?: string }> | null) ?? [];
+    existing.push({ tool, timestamp: new Date().toISOString(), tier });
     await redisSet(key, existing);
     await redisExpire(key, 86400);
   } catch (e) { console.error('[SessionLog] internal error:', e); }

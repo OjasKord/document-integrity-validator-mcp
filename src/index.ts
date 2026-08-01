@@ -141,9 +141,26 @@ function isPaidKey(key: string): boolean {
   return key.length > 0 && Object.prototype.hasOwnProperty.call(stats.paid_api_keys, key);
 }
 
+// Redis-independent circuit breaker for the email paths that remain after
+// raw gate-hit emails were removed 2026-07-27 (trial-extension request +
+// payment events only). Caps total sends server-wide so a flood of fake
+// trial-extension requests can't exhaust the fleet's shared Resend quota
+// even if Redis-backed dedup elsewhere is unavailable (Lesson 209).
+const EMAIL_CIRCUIT_BREAKER_LIMIT = 20;
+let emailBreakerCount = 0;
+let emailBreakerWindowStart = Date.now();
+function emailCircuitBreakerAllows(): boolean {
+  const now = Date.now();
+  if (now - emailBreakerWindowStart > 3600000) { emailBreakerWindowStart = now; emailBreakerCount = 0; }
+  if (emailBreakerCount >= EMAIL_CIRCUIT_BREAKER_LIMIT) return false;
+  emailBreakerCount++;
+  return true;
+}
+
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
+  if (!emailCircuitBreakerAllows()) { console.error('[EmailBreaker] suppressed email to ' + to + ' — hourly cap reached'); return; }
   try {
     await axios.post(
       'https://api.resend.com/emails',
@@ -273,7 +290,7 @@ async function handleStripeEvent(event: Record<string, unknown>): Promise<void> 
   saveStats(stats);
 
   const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey && email !== 'unknown') {
+  if (resendKey && email !== 'unknown' && emailCircuitBreakerAllows()) {
     try {
       await axios.post(
         'https://api.resend.com/emails',
@@ -856,9 +873,15 @@ async function runHTTP(): Promise<void> {
     const sessionKeys = await redisKeys(`${REDIS_PREFIX}:session:*:${today}`);
     const toolBreakdown: Record<string, number> = {};
     let calls24h = 0;
+    let gateHits24h = 0;
     for (const key of sessionKeys) {
-      const calls = (await redisGet(key) as Array<{ tool: string; timestamp: string }> | null) ?? [];
-      calls.forEach(c => { if (c.tool) { toolBreakdown[c.tool] = (toolBreakdown[c.tool] ?? 0) + 1; calls24h++; } });
+      const calls = (await redisGet(key) as Array<{ tool: string; timestamp: string; tier?: string }> | null) ?? [];
+      calls.forEach(c => {
+        if (!c.tool) return;
+        if (c.tier === 'gated') { gateHits24h++; return; }
+        toolBreakdown[c.tool] = (toolBreakdown[c.tool] ?? 0) + 1;
+        calls24h++;
+      });
     }
     const unique24h = sessionKeys.length;
 
@@ -866,6 +889,7 @@ async function runHTTP(): Promise<void> {
       server: 'document-integrity-validator-mcp',
       date: today,
       calls_24h: calls24h,
+      gate_hits_24h: gateHits24h,
       unique_ips_24h: unique24h,
       limit_hits: limitHits,
       trial_extensions: trialCount,
@@ -887,6 +911,12 @@ async function runHTTP(): Promise<void> {
     if (!isToolDisabled && req.body?.method === 'tools/call' && req.body?.params?.name === 'check_document') {
       const gateError = await checkFreeTierGate(currentIP, isPaidKey(currentApiKey) || isOwner(), stats);
       if (gateError) {
+        // This is the only call site where a gate hit doesn't already pass
+        // through the tool handler's unconditional stats.total_calls++ --
+        // increment here so /stats and /health reflect gate volume too.
+        stats.total_calls++;
+        stats.check_calls++;
+        saveStats(stats);
         res.status(402).set(cors).json({
           jsonrpc: '2.0',
           id: req.body.id,

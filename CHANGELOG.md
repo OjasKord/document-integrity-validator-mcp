@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.30] - 2026-08-01
+- fix: gate hits (free-tier exhausted on check_document) now write a tier:'gated' session-log entry and increment stats.total_calls/check_calls before the early return, so /daily-report and /stats see gate volume as events instead of being blind to them (new `gate_hits_24h` field). appendSessionLog gained an optional `tier` parameter (defaults to 'success') to carry this.
+- removed: notifyGateHit() and the gate-notify.ts shared module — raw free-tier gate hits no longer send an email (still increment counters, still return 402). Email now fires only on a trial-extension request or a Stripe payment event
+- added: Redis-independent in-process circuit breaker (20 emails/hour) on the remaining email paths (trial-extension notify/confirm/follow-up, paid API key delivery) so a Redis outage can't fail-open into an email flood (Lesson 209 pattern)
+
 ## [1.0.28] - 2026-07-03
 - fix: description-accuracy correction across check_document/check_document_package tool descriptions (index.ts, definitions.json) and the Smithery listing (smithery.yaml agentRole, description, systemPrompt) -- "assessed against [standard]" and "verify authenticity" overstated capability the system prompt doesn't have (standards are labels populated per Rule 2, not standard-specific check logic); replaced with "internal consistency and completeness, naming the applicable standard". Hedged "indicating tampering" -> "may indicate tampering" and "is a fraud signal" -> "may indicate fraud" across both tools, since a consistency check can't distinguish tampering/fraud from clerical error, OCR misread, or legitimate cross-document variance. Dropped "no further analysis needed" (overstated verdict finality). Text only, no behavior change.
 - fix: package.json version had drifted one patch behind constants.ts VERSION and CHANGELOG (package.json stuck at 1.0.26 while VERSION/CHANGELOG were already at 1.0.27 from the prior commit) -- both now agree at 1.0.28
