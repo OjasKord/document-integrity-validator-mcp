@@ -157,6 +157,26 @@ function emailCircuitBreakerAllows(): boolean {
   return true;
 }
 
+// One trial extension per IP, ever (2026-08-19). Redis (trial_ext_granted:{ipSafe},
+// no TTL) is the authoritative per-IP dedup and survives restarts. This breaker is a
+// Redis-independent backstop: even if Redis is unreachable and the dedup check
+// silently passes every request, no more than 5 NEW grants can be issued per hour
+// per server process.
+const TRIAL_GRANT_HOURLY_CAP = 5;
+let trialGrantBreakerCount = 0;
+let trialGrantBreakerWindowStart = Date.now();
+function trialGrantCircuitBreakerAllows(): boolean {
+  const now = Date.now();
+  if (now - trialGrantBreakerWindowStart > 3600000) { trialGrantBreakerWindowStart = now; trialGrantBreakerCount = 0; }
+  if (trialGrantBreakerCount >= TRIAL_GRANT_HOURLY_CAP) return false;
+  trialGrantBreakerCount++;
+  return true;
+}
+
+function ipSafeKey(ip: string): string {
+  return ip.replace(/:/g, '_').replace(/\s/g, '');
+}
+
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
@@ -749,6 +769,40 @@ async function runHTTP(): Promise<void> {
       return;
     }
 
+    const ip =
+      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+      req.ip ??
+      'unknown';
+    const ipGrantKey = REDIS_PREFIX + ':trial_ext_granted:' + ipSafeKey(ip);
+
+    // One trial extension per IP, ever. IP is the authoritative key -- never
+    // name/email, both are attacker-controlled and trivially rotated. Redis
+    // has no TTL on this key, so a grant issued once is permanent regardless
+    // of process restarts.
+    const alreadyGrantedForIp = await redisGet(ipGrantKey);
+    if (alreadyGrantedForIp) {
+      res.status(200).set(cors).json({
+        granted: false,
+        error: 'This IP address has already received its one-time trial extension.',
+        message: 'Only one trial extension is available per IP address, and it has already been used. Upgrade to continue: ' + PRO_UPGRADE_URL,
+        upgrade_url: PRO_UPGRADE_URL,
+        agent_action: 'HALT_WORKFLOW — trial extension already used for this IP. Do not retry /trial-extension from this IP under a different name or email. Direct the user to the paid upgrade path.'
+      });
+      return;
+    }
+    // Redis-independent backstop -- caps new grants at 5/hr/server even if
+    // Redis is unreachable and the check above can't be trusted.
+    if (!trialGrantCircuitBreakerAllows()) {
+      res.status(200).set(cors).json({
+        granted: false,
+        error: 'Trial extension grants are temporarily rate-limited on this server.',
+        message: 'Please try again in a few minutes, or upgrade now: ' + PRO_UPGRADE_URL,
+        upgrade_url: PRO_UPGRADE_URL,
+        agent_action: 'RETRY_LATER_OR_UPGRADE'
+      });
+      return;
+    }
+
     const emailKey = 'trial:' + email.toLowerCase().trim();
     if (stats.trial_extensions[emailKey]) {
       res.status(409).set(cors).json({
@@ -758,11 +812,6 @@ async function runHTTP(): Promise<void> {
       });
       return;
     }
-
-    const ip =
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-      req.ip ??
-      'unknown';
 
     const month = new Date().toISOString().slice(0, 7);
     if (!stats.free_tier_calls_by_ip[ip]) stats.free_tier_calls_by_ip[ip] = {};
@@ -777,6 +826,7 @@ async function runHTTP(): Promise<void> {
     };
     saveStats(stats);
     await redisSet(REDIS_PREFIX + ':trial:' + email.toLowerCase().trim(), { name, email, use_case: use_case ?? '', ip, timestamp: nowISO(), server: 'document-integrity-validator-mcp' });
+    await redisSet(ipGrantKey, { name, email, ip, granted_at: nowISO() }); // no TTL -- one per IP, ever
 
     // 24h follow-up record -- processed by /process-trial-followups (fleet cron)
     await redisSet(REDIS_PREFIX + ':followup:' + email.toLowerCase().trim(), { email, name, server: 'document-integrity-validator-mcp', granted_at: nowISO(), sent: false });
