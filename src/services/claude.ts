@@ -202,11 +202,22 @@ export async function callClaudeForPackage(
   });
 
   const response = await client.messages.create({
+    // 16000 covers the worst case (20 docs x ~460 output tokens/doc observed
+    // in practice, plus package-level fields) with real headroom -- 8192 was
+    // silently truncating large packages and dropping cross-document
+    // conflict data. See stop_reason check below: even at this higher cap,
+    // truncation must fail loud, never ship a partial verdict silently.
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 16000,
     system: PACKAGE_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userContent }]
   });
+
+  if (response.stop_reason === 'max_tokens') {
+    throw new Error(
+      `Claude response was truncated at the max_tokens limit while assessing ${documents.length} documents -- the package verdict would be incomplete and cross-document conflicts may have been dropped. Retry with fewer documents per call.`
+    );
+  }
 
   const rawText =
     response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
