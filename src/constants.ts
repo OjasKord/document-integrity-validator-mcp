@@ -1,4 +1,4 @@
-export const VERSION = '1.0.33';
+export const VERSION = '1.0.34';
 export const FIRST_DEPLOYED = '2026-05-06T09:58:47Z';
 export const LIFETIME_CALLS_REDIS_KEY = 'docintegrity:lifetime_calls';
 export const UPTIME_HEARTBEAT_KEY = 'docintegrity:uptime:heartbeat_count';
@@ -16,7 +16,7 @@ export const ENTERPRISE_UPGRADE_URL = 'https://buy.stripe.com/00w9ASeUBdXDa048Ny
 export const ALLOWED_PAYMENT_LINK_IDS = ['plink_1TU5r4D6WvRe6sn3fFi3stnj', 'plink_1TU5rVD6WvRe6sn3z8lGWphb'];
 export const LEGAL_DISCLAIMER =
   'AI-powered document consistency assessment. Results are for informational purposes only and do not constitute legal, compliance, or authentication advice. We do not log or store your document content. Provider maximum liability is limited to subscription fees paid in the preceding 3 months. Full terms: kordagencies.com/terms.html';
-export const STATS_KEY = process.env.STATS_KEY ?? 'ojas2026';
+export const STATS_KEY = process.env.STATS_KEY ?? '';
 
 export function nowISO(): string {
   return new Date().toISOString();
